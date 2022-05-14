@@ -6,10 +6,10 @@ import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -24,18 +24,22 @@ import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.FindsByAndroidUIAutomator;
 import io.appium.java_client.InteractsWithApps;
 import io.appium.java_client.MobileElement;
+import io.appium.java_client.TouchAction;
 import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.android.AndroidElement;
 import io.appium.java_client.pagefactory.AppiumFieldDecorator;
 import io.appium.java_client.remote.MobileCapabilityType;
 import io.appium.java_client.service.local.AppiumDriverLocalService;
 import io.appium.java_client.service.local.AppiumServerHasNotBeenStartedLocallyException;
 import io.appium.java_client.service.local.AppiumServiceBuilder;
 import io.appium.java_client.service.local.flags.GeneralServerFlag;
+import io.appium.java_client.touch.offset.PointOption;
 
 public class BaseTest {
 
 	@SuppressWarnings("rawtypes")
 	public static AppiumDriver driver;
+	
 	protected static Properties prop;
 	InputStream inputStream;
 	private static AppiumDriverLocalService server;
@@ -52,8 +56,8 @@ public class BaseTest {
 		inputStream = getClass().getClassLoader().getResourceAsStream("config.properties");
 		
 		
-		server = getAppiumService(); // -> If using Mac, uncomment this statement and comment below statement
-		//server = getAppiumServerDefault(); // -> If using Windows, uncomment this statement and comment above statement
+		//server = getAppiumService(); // -> If using Mac, uncomment this statement and comment below statement
+		server = getAppiumServerDefault(); // -> If using Windows, uncomment this statement and comment above statement
 		if(!checkIfAppiumServerIsRunnning(4723)) {
 			server.start();
 			server.clearOutPutStreams(); // -> Comment this if you don't want to see server logs in the console
@@ -72,7 +76,7 @@ public class BaseTest {
 			caps.setCapability(MobileCapabilityType.AUTOMATION_NAME, prop.getProperty("androidAutomationName"));
 			URL appURL = getClass().getClassLoader().getResource(prop.getProperty("androidAppLocation"));
 			caps.setCapability(MobileCapabilityType.APP,
-					"/Users/riyaanghosh/eclipse-workspace/MyTDDProject/src/test/resources/app/Android.SauceLabs.Mobile.Sample.app.2.7.1.apk");
+					prop.getProperty("androidAppLocation"));
 			caps.setCapability("appPackage", prop.getProperty("androidAppPackage"));
 			caps.setCapability("appActivity", prop.getProperty("androidAppActivity"));
 			URL url = new URL(prop.getProperty("appiumURL"));
@@ -94,6 +98,30 @@ public class BaseTest {
 		waitForVisibility(e);
 		e.clear();
 
+	}
+	public AndroidElement scrollToElementByPixel(String by, String using) {
+	    AndroidElement element = null;
+	    int numberOfTimes = 5;
+	    org.openqa.selenium.Dimension size = driver.manage().window().getSize();
+	    int anchor = (int) (size.width / 2);
+	    // Swipe up to scroll down
+	    int startPoint = (int) (size.height - 10);
+	    int endPoint = 10;
+
+	    for (int i = 0; i < numberOfTimes; i++) {
+	        try {
+	            new TouchAction(driver)
+	                .longPress(new PointOption().withCoordinates(anchor, startPoint))
+	                .moveTo(new PointOption().withCoordinates(anchor, endPoint))
+	                .release()
+	                .perform();
+	            element = (AndroidElement) driver.findElement(by, using);
+	            i = numberOfTimes;
+	        } catch (NoSuchElementException ex) {
+	            System.out.println(String.format("Element not available. Scrolling (%s) times...", i + 1));
+	        }
+	    }
+	    return element;
 	}
 
 	public void click(MobileElement e) {
@@ -117,10 +145,10 @@ public class BaseTest {
 		return txt;
 	}
 
-	public MobileElement scrollToElement() {
-		return (MobileElement) ((FindsByAndroidUIAutomator) driver)
+	public MobileElement scrollToElement(String descText) {
+		return (MobileElement) ((FindsByAndroidUIAutomator<?>) driver)
 				.findElementByAndroidUIAutomator("new UiScrollable(new UiSelector()"
-						+ ".scrollable(true)).scrollIntoView(" + "new UiSelector().description(\"test-Price\"));");
+						+ ".scrollable(true)).scrollIntoView(" + "new UiSelector().description(\""+descText+"\"));");
 	}
 
 	public void closeApp() {

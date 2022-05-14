@@ -6,6 +6,7 @@ import com.qa.BaseTest;
 import org.testng.Assert;
 import org.testng.annotations.*;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,8 +23,9 @@ public class LoginTests extends BaseTest {
 	@BeforeClass
 	public void beforeClass() throws Exception {
 		
-		
-		details = new FileInputStream("/Users/riyaanghosh/eclipse-workspace/MyTDDProject/src/test/resources/Data/data.json");
+
+	    String path = new File("src/test/resources/Data/data.json").getAbsolutePath();
+		details = new FileInputStream(path);
 		JSONTokener jsonToken = new JSONTokener(details);
 		loginUsers = new JSONObject(jsonToken);
 		closeApp();
